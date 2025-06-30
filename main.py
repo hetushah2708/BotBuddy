@@ -1,9 +1,46 @@
+from flask import Flask, request, render_template, jsonify
 import os
+import speech_recognition as sr
+from algo import process_speech
+from pydub import AudioSegment
 
-import eel
+app = Flask(__name__)
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-eel.init("www") #this is will point the directory basically will get to mnow that we have HRMLS And CSS in www
+@app.route('/')
+def index():
+    return render_template('index2.html')
 
-os.system('start msedge.exe --app="http://localhost:8000/index.html"')
+@app.route('/upload-audio', methods=['POST'])
+def upload_audio():
+    if 'audio_data' not in request.files:
+        return jsonify({'error': 'No audio file'}), 400
 
-eel.start('index.html', mode=None, host='localhost', block= True)
+    audio_file = request.files['audio_data']
+    filepath = os.path.join(UPLOAD_FOLDER, 'user_audio.wav')
+    audio_file.save(filepath)
+
+    # Convert to PCM WAV using pydub
+    try:
+        sound = AudioSegment.from_file(filepath)
+        pcm_wav_path = os.path.join(UPLOAD_FOLDER, 'user_audio_pcm.wav')
+        sound.export(pcm_wav_path, format='wav')
+    except Exception as e:
+        return jsonify({'error': f'Audio conversion failed: {e}'}), 400
+
+    # Speech Recognition
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(pcm_wav_path) as source:
+        audio = recognizer.record(source)
+        try:
+            text = recognizer.recognize_google(audio)
+            result = process_speech(text)
+            return jsonify({'original': text, 'processed': result})
+        except sr.UnknownValueError:
+            return jsonify({'error': 'Could not understand audio'}), 400
+        except sr.RequestError as e:
+            return jsonify({'error': f'Service error: {e}'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
