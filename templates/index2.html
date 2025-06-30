@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Audio Processor</title>
+    <script src="/static/recorder.js"></script>
 </head>
 <body>
     <h1>Record, Send and Process</h1>
@@ -12,25 +13,26 @@
     <p><strong>Processed Text:</strong> <span id="processedText"></span></p>
 
     <script>
-        let mediaRecorder;
-        let audioChunks = [];
+        let recorder;
+        let audioContext;
+        let gumStream;
 
         document.getElementById('startBtn').onclick = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            gumStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const input = audioContext.createMediaStreamSource(gumStream);
+            recorder = new Recorder(input, { numChannels: 1 });
+            recorder.record();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+        };
 
-            mediaRecorder.ondataavailable = event => {
-                if (event.data.size > 0) {
-                    audioChunks.push(event.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        document.getElementById('stopBtn').onclick = () => {
+            recorder.stop();
+            gumStream.getAudioTracks()[0].stop();
+            recorder.exportWAV(blob => {
                 const formData = new FormData();
-                formData.append('audio_data', audioBlob, 'recording.wav');
-
+                formData.append('audio_data', blob, 'recording.wav');
                 fetch('/upload-audio', {
                     method: 'POST',
                     body: formData
@@ -44,15 +46,7 @@
                         document.getElementById('processedText').innerText = data.processed;
                     }
                 });
-            };
-
-            mediaRecorder.start();
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-        };
-
-        document.getElementById('stopBtn').onclick = () => {
-            mediaRecorder.stop();
+            });
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
         };

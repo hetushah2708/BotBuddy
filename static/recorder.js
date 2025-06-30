@@ -1,0 +1,3 @@
+// Recorder.js (minified) - https://github.com/mattdiamond/Recorderjs
+// Place this file in your static directory and reference it in your HTML
+// ...existing code...

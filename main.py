@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, jsonify
 import os
 import speech_recognition as sr
 from algo import process_speech
-from pydub import AudioSegment
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -21,17 +20,9 @@ def upload_audio():
     filepath = os.path.join(UPLOAD_FOLDER, 'user_audio.wav')
     audio_file.save(filepath)
 
-    # Convert to PCM WAV using pydub
-    try:
-        sound = AudioSegment.from_file(filepath)
-        pcm_wav_path = os.path.join(UPLOAD_FOLDER, 'user_audio_pcm.wav')
-        sound.export(pcm_wav_path, format='wav')
-    except Exception as e:
-        return jsonify({'error': f'Audio conversion failed: {e}'}), 400
-
     # Speech Recognition
     recognizer = sr.Recognizer()
-    with sr.AudioFile(pcm_wav_path) as source:
+    with sr.AudioFile(filepath) as source:
         audio = recognizer.record(source)
         try:
             text = recognizer.recognize_google(audio)
