@@ -5,6 +5,8 @@ from sentence_transformers import SentenceTransformer, util
 import google.generativeai as genai
 from datetime import datetime
 import asyncio
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
 # Configure standard logging
 logging.basicConfig(level=logging.INFO)
@@ -48,6 +50,12 @@ class FAQBot:
         self.faq_data = self.load_faq_data()
         self.faq_questions = [item['question'] for item in self.faq_data]
         self.faq_embeddings = self.model.encode(self.faq_questions, convert_to_tensor=True)
+        # Initialize NLTK sentiment analyzer
+        try:
+            nltk.data.find('sentiment/vader_lexicon.zip')
+        except LookupError:
+            nltk.download('vader_lexicon')
+        self.sentiment_analyzer = SentimentIntensityAnalyzer()
 
     def initialize_gemini(self):
         try:
@@ -85,7 +93,33 @@ class FAQBot:
             finance_logger.error("Error processing speech", e)
             return None
 
-    def get_gemini_prompt(self, question: str, faq_data: List[Dict]) -> str:
+    def analyze_sentiment(self, text: str) -> str:
+        """Analyze sentiment and return a descriptive emotion (angry, frustrated, tired, happy, sad, clear, etc.) or fallback to positive/negative/neutral."""
+        scores = self.sentiment_analyzer.polarity_scores(text)
+        compound = scores['compound']
+        # Heuristic rules for more nuanced emotions
+        lowered = text.lower()
+        if any(word in lowered for word in ['angry', 'mad', 'furious', 'rage']):
+            return 'angry'
+        if any(word in lowered for word in ['frustrated', 'annoyed', 'irritated']):
+            return 'frustrated'
+        if any(word in lowered for word in ['tired', 'exhausted', 'fatigued', 'sleepy']):
+            return 'tired'
+        if any(word in lowered for word in ['happy', 'glad', 'joyful', 'excited']):
+            return 'happy'
+        if any(word in lowered for word in ['sad', 'unhappy', 'depressed', 'down']):
+            return 'sad'
+        if any(word in lowered for word in ['clear', 'understand', 'got it', 'makes sense']):
+            return 'clear'
+        # Fallback to VADER compound score
+        if compound >= 0.05:
+            return 'positive'
+        elif compound <= -0.05:
+            return 'negative'
+        else:
+            return 'neutral'
+
+    def get_gemini_prompt(self, question: str, faq_data: List[Dict], sentiment: str = "neutral") -> str:
         faq_text = json.dumps(faq_data, indent=2)
         current_date = datetime.now().strftime("%Y-%m-%d")
     
@@ -96,17 +130,24 @@ class FAQBot:
     Current date: {current_date}
     FAQ Data: {faq_text}
     
-    User question: "{question}"
+    User question: \"{question}\"
     
     Please provide a detailed, human-like response to the user's question.
-    Include appropriate fillers like:
-    - "Let me check my database"
-    - "That's an interesting question"
-    - "I'll need a moment to find the best answer for you"
-    - "Based on our records"
+    
+    Respond in a tone that matches the user's sentiment or emotion, which is: {sentiment}.
+    If the sentiment is 'angry', be calm, patient, and de-escalate.
+    If 'frustrated', be extra helpful and reassuring.
+    If 'tired', be gentle and concise.
+    If 'happy', be enthusiastic and positive.
+    If 'sad', be empathetic and supportive.
+    If 'clear', acknowledge understanding and offer further help.
+    If 'positive', be encouraging.
+    If 'negative', be empathetic.
+    If 'neutral', be professional and clear.
+    For any other emotion, match the user's tone appropriately.
     
     If you can't find a relevant answer in the FAQ data, respond with:
-    "I'm sorry, I couldn't find information about that in our database. Could you please rephrase your question or ask something else?"
+    \"I'm sorry, I couldn't find information about that in our database. Could you please rephrase your question or ask something else?\"
     
     Important rules:
     1. Always be polite and professional
@@ -120,12 +161,15 @@ class FAQBot:
     async def generate_response(self, question: str) -> str:
         logger.info(f"Processing question: {question}")
 
+        sentiment = self.analyze_sentiment(question)
+        logger.info(f"Detected sentiment: {sentiment}")
+
         fixed_answer = self.process_speech(question)
         logger.info(f"Fixed answer: {fixed_answer}")
 
         if fixed_answer:
             try:
-                prompt = self.get_gemini_prompt(question, [{"question": question, "answer": fixed_answer}])
+                prompt = self.get_gemini_prompt(question, [{"question": question, "answer": fixed_answer}], sentiment)
                 gemini_model = genai.GenerativeModel('gemini-1.5-flash')
                 response = await gemini_model.generate_content_async(prompt)
                 logger.info(f"Gemini API response: {response.text}")
@@ -135,7 +179,7 @@ class FAQBot:
                 return fixed_answer
 
         try:
-            prompt = self.get_gemini_prompt(question, self.faq_data)
+            prompt = self.get_gemini_prompt(question, self.faq_data, sentiment)
             gemini_model = genai.GenerativeModel('gemini-1.5-flash')
             response = await gemini_model.generate_content_async(prompt)
             logger.info(f"Gemini API response: {response.text}")
