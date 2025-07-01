@@ -2,54 +2,43 @@
 <html>
 <head>
     <title>Audio Processor</title>
-    <script src="/static/recorder.js"></script>
+    <script src="{{ url_for('static', filename='recorder.js') }}"></script>
 </head>
 <body>
     <h1>Record, Send and Process</h1>
-    <button id="startBtn">Start</button>
-    <button id="stopBtn" disabled>Stop</button>
+    <button id="startBtn">Start Listening (Server)</button>
+    <button id="stopBtn" style="display:none;">Stop</button>
 
     <p><strong>Original Text:</strong> <span id="originalText"></span></p>
     <p><strong>Processed Text:</strong> <span id="processedText"></span></p>
 
     <script>
-        let recorder;
-        let audioContext;
-        let gumStream;
-
         document.getElementById('startBtn').onclick = async () => {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            gumStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const input = audioContext.createMediaStreamSource(gumStream);
-            recorder = new Recorder(input, { numChannels: 1 });
-            recorder.record();
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-        };
-
-        document.getElementById('stopBtn').onclick = () => {
-            recorder.stop();
-            gumStream.getAudioTracks()[0].stop();
-            recorder.exportWAV(blob => {
-                const formData = new FormData();
-                formData.append('audio_data', blob, 'recording.wav');
-                fetch('/upload-audio', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        document.getElementById('originalText').innerText = data.original;
-                        document.getElementById('processedText').innerText = data.processed;
-                    }
-                });
-            });
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = 'Listening... (Speak into server mic)';
+            document.getElementById('originalText').textContent = '';
+            document.getElementById('processedText').textContent = '';
+            try {
+                const response = await fetch('/start-listening', { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    document.getElementById('originalText').textContent = data.original;
+                    document.getElementById('processedText').textContent = data.processed;
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Listening (Server)';
+            }
         };
     </script>
+    
 </body>
 </html>
