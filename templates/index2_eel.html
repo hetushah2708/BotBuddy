@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buddy</title>
+  <link rel="shortcut icon" href="/static/assets/image/Icon_1.ico" type="image/x-icon" />
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    crossorigin="anonymous">
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+  <!-- Texllate -->
+  <link rel="stylesheet" href="/static/assets/vendore/texllate/animate.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+  <!-- Chatbot Visual + Recording Section -->
+  <section id="Oval" class="mb-4">
+    <div class="mycontainer" style="height: 100vh;">
+      <canvas id="canvasOne" width="500" height="500"></canvas>
+      <div id="BuddyHood">
+        <div class="square">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+      <div class="project-text">
+        <h5 class="text-light mt-4" style="z-index: 2; text-align: center;">Ask me anything</h5>
+        <div class="text-center text-light mt-3" style="z-index: 2;">
+          <h5>Record, Send and Process</h5>
+          <button id="startBtn">Start Listening (Local)</button>
+          <button id="stopBtn" style="display:inline;">Stop</button>
+          <p><strong>Status:</strong> <span id="statusText"></span></p>
+          <p><strong>Original Text:</strong> <span id="originalText"></span></p>
+          <p><strong>Processed Text:</strong> <span id="processedText"></span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script type="text/javascript" src="/eel.js"></script>
+  <script>
+    document.getElementById('startBtn').onclick = () => {
+      eel.start_listening();
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = false;
+    };
+
+    document.getElementById('stopBtn').onclick = () => {
+      eel.stop_listening();
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+    };
+
+    // Eel functions to update UI
+    eel.expose(update_status);
+    function update_status(text) {
+      document.getElementById('statusText').textContent = text;
+    }
+
+    eel.expose(update_original);
+    function update_original(text) {
+      document.getElementById('originalText').textContent = text;
+    }
+
+    eel.expose(update_processed);
+    function update_processed(text) {
+      document.getElementById('processedText').textContent = text;
+    }
+
+    // Initialize stop button as disabled
+    document.getElementById('stopBtn').disabled = true;
+  </script>
+</body>
+</html>

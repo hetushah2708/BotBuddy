@@ -99,11 +99,7 @@ class FAQBot:
     User question: "{question}"
     
     Please provide a detailed, human-like response to the user's question.
-    Include appropriate fillers like:
-    - "Let me check my database"
-    - "That's an interesting question"
-    - "I'll need a moment to find the best answer for you"
-    - "Based on our records"
+   
     
     If you can't find a relevant answer in the FAQ data, respond with:
     "I'm sorry, I couldn't find information about that in our database. Could you please rephrase your question or ask something else?"
