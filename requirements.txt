@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+SpeechRecognition
+pyttsx3
+pyaudio
+sentence-transformers
+google-generativeai
+asyncio
+numpy

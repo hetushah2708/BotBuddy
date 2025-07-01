@@ -1,5 +1,5 @@
 window.addEventListener("load", windowLoadHandler, false);
-var sphereRad = 140;
+var sphereRad = 250;
 var radius_sp = 1;
 //for debug messages
 var Debugger = function () { };
@@ -86,7 +86,7 @@ function canvasApp() {
 
 		//projection center coordinates sets location of origin
 		projCenterX = displayWidth / 2;
-		projCenterY = displayHeight / 2;
+		projCenterY = displayHeight / 4;
 
 		//we will not draw coordinates if they have too large of a z-coordinate (which means they are very close to the observer).
 		zMax = fLen - 2;
@@ -103,8 +103,8 @@ function canvasApp() {
 
 		particleRad = 1.8;
 
-		sphereCenterX = 0;
-		sphereCenterY = 0;
+		sphereCenterX = projCenterX;
+		sphereCenterY = projCenterY;
 		sphereCenterZ = -3 - sphereRad;
 
 		//alpha values will lessen as particles move further back, causing depth-based darkening:
@@ -132,7 +132,13 @@ function canvasApp() {
 				//We use the addParticle function to add a new particle. The parameters set the position and velocity components.
 				//Note that the velocity parameters will cause the particle to initially fly outwards away from the sphere center (after
 				//it becomes unstuck).
-				var p = addParticle(x0, sphereCenterY + y0, sphereCenterZ + z0, 0.002 * x0, 0.002 * y0, 0.002 * z0);
+				var p = addParticle(
+					sphereCenterX + x0,    // ✅ Add sphere center offset!
+					sphereCenterY + y0,    // ✅ Add center Y
+					sphereCenterZ + z0,
+					0.002 * x0, 0.002 * y0, 0.002 * z0
+				);
+
 
 				//we set some "envelope" parameters which will control the evolving alpha of the particles.
 				p.attack = 50;
@@ -186,8 +192,9 @@ function canvasApp() {
 			x and z (but the y coordinate will not change).
 			Then, we take the new coordinates (rotX, y, rotZ), and project these onto the 2D view plane.
 			*/
-			rotX = cosAngle * p.x + sinAngle * (p.z - sphereCenterZ);
-			rotZ = -sinAngle * p.x + cosAngle * (p.z - sphereCenterZ) + sphereCenterZ;
+			rotX = cosAngle * (p.x - sphereCenterX) + sinAngle * (p.z - sphereCenterZ);
+			rotZ = -sinAngle * (p.x - sphereCenterX) + cosAngle * (p.z - sphereCenterZ) + sphereCenterZ;
+
 			m = radius_sp * fLen / (fLen - rotZ);
 			p.projX = rotX * m + projCenterX;
 			p.projY = p.y * m + projCenterY;

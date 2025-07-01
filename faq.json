@@ -1,0 +1,34 @@
+[
+    {
+        "question": "What is ValuEnable?",
+        "answer": "ValuEnable is a full-stack insuretech platform backed by Rainmatter (Zerodha), enabling digital lending and customer engagement in insurance."
+    },
+    {
+        "question": "What is InsureBot Quest 2025?",
+        "answer": "InsureBot Quest 2025 is a hackathon organized by ValuEnable for building conversational voice AI bots for insurance services."
+    },
+    {
+        "question": "What does the AI assistant need to do?",
+        "answer": "The assistant should speak with customers, answer common insurance queries, and sound like a real human insurance agent."
+    },
+    {
+        "question": "What are the rewards for the hackathon?",
+        "answer": "Top team wins ₹50,000. Top 5 teams get certificates and recognition on ValuEnable’s website and social media."
+    },
+    {
+        "question": "What is the judging criteria?",
+        "answer": "Submissions are judged based on latency, accuracy, empathy, and interruption handling."
+    },
+    {
+        "question": "Can I use AI APIs?",
+        "answer": "Yes, use of AI APIs and tools is allowed but must be credited."
+    },
+    {
+        "question": "What is the team size limit?",
+        "answer": "Teams can have a maximum of 3 members."
+    },
+    {
+        "question": "How is speech evaluated?",
+        "answer": "The bot should process audio quickly and naturally, handling interruptions and responding empathetically."
+    }
+]
